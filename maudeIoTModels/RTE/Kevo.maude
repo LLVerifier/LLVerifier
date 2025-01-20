@@ -1,0 +1,93 @@
+load ../../Iot .
+mod SYSTEM is
+protecting Iot .
+eq init = idle @ < cloudA | deviceB : ('owner' : nils , 'key' : 'secretOfB') > 
+            < deviceB | 'key' : pub('secretOfB') , 'counter' : 0 > 
+            < userC | 'localTo' : deviceD , 'know' : nils >
+            < userA | 'localTo' : deviceB , 'know' : nils , 'bindStatus' : 'ready' , 'counter' : 0 > .
+
+vars UserX UserY : User .
+vars KeyA KeyB Status R : Qid .
+var DeviceX : Device .
+vars ...  ....  SetX SetY : Set .
+vars S : Soup .
+vars Any Any' : Bool .
+vars N N' : Nat .
+
+***device rule
+eq  < DeviceX | 'key' : KeyA, 'counter' : N > < UserX | 'localTo' : DeviceX , .... >
+    $ UserX 'pressButton' DeviceX 
+  = < DeviceX | 'key' : KeyA, 'counter' : (N + 1) rem 10 > < UserX | 'localTo' : DeviceX , .... >
+    $ DeviceX 'transfer' UserX | encrypt(KeyA , randomStr(N)) . 
+
+***cloud rule
+eq < cloudA | DeviceX : ('owner' : SetX  , 'key' : KeyA) >
+   $ UserX 'callAPI:bind' cloudA | (DeviceX ; encrypt(pub(KeyA) , R)) 
+ = < cloudA | DeviceX : ('owner' : UserX , 'key' : KeyA) > 
+   $ cloudA 'respAPI:bind' UserX | true .
+
+eq < cloudA | DeviceX : ('owner' : UserX , ...) >
+   $ UserX 'callAPI:reset' cloudA | DeviceX 
+ = < cloudA | DeviceX : ('owner' : nils , ...) > . *** reset
+
+
+*** userA rule
+eq < userA | 'bindStatus' : Status ,  ... > $ cloudA 'respAPI:bind' userA | true
+ = < userA | 'bindStatus' : 'success' ,  ... > . 
+
+endm
+*** key0 key1 key2 key0
+mod TRANSITION is
+*** more permissive to achieve compeleteness
+including SYSTEM .
+
+vars K Status : Qid . 
+var Keys : Set .
+vars S S' : Soup .
+var E : Event .
+var Any : Bool .
+var N : Nat .
+vars ... .... SetX SetY : Set .
+
+***$1: Analyzer input minial nomal user RTE operation sequence 
+ops ua1 ua4 ua3 uc1 uc4 uc3 : -> Event .
+ops ua2 uc2 : Qid -> Event .
+eq ua1 = $ userA 'pressButton' deviceB .
+eq ua2(K) = $ userA 'callAPI:bind' cloudA | (deviceB ; K)  .
+eq ua3 = $ userA 'callAPI:reset' cloudA | deviceB .
+
+eq uc1    = $ userC 'pressButton' deviceB .
+eq uc2(K) = $ userC 'callAPI:bind' cloudA | (deviceB ; K)  .
+eq uc3 = $ userC 'callAPI:reset' cloudA | deviceB .
+
+*** userA operation rl rule, generate from $1
+rl [um1] : 
+      E @ S < userA | 'bindStatus' : 'ready' , 'counter' : N, ... > 
+ => ua1 @ S < userA | 'bindStatus' : 'progress' , 'counter' : (N + 1), ... > ua1 .
+
+rl [um2] : 
+    E      @ S < userA | 'know' : (K,....) , 'bindStatus' : 'progress' , ... >
+ => ua2(K) @ S < userA | 'know' : (K,....) , 'bindStatus' : 'progress' , ... > ua2(K) .
+
+rl [um3] : 
+    E      @ S < userA | 'bindStatus' : 'alert' , ... >
+    => ua3 @ S < userA | 'bindStatus' : 'alert' , ... > ua3 .
+
+
+rl [am1] : 
+      E @ S < userC | 'localTo' : deviceB , ... > 
+ => uc1 @ S < userC | 'localTo' : deviceB , ... > uc1 .
+
+rl [am2] : 
+     E      @ S < userC | 'know' : (K , Keys) , ... > 
+  => uc2(K) @ S < userC | 'know' : (K , Keys) , ... > uc2(K) .
+
+rl [am3] : E      @ S  => uc3 @ S uc3 .
+
+
+rl [ac] : E @ S < userC | 'localTo' : deviceD , ... > 
+   => $ userC 'approaches' deviceB @ S < userC | 'localTo' : deviceB , ... >  .
+rl [al] : E @ S < userC | 'localTo' : deviceB , ... >  
+   => $ userC 'leaves' deviceB @ S < userC | 'localTo' : deviceD , ... > .
+endm
+

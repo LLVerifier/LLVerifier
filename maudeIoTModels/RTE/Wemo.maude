@@ -1,0 +1,102 @@
+load ../../Iot .
+mod SYSTEM is
+pr Iot .
+***$3: Analyzer input:inital state 
+eq init = idle @ < cloudA | deviceB , 'owner' : false > 
+            < cloudA | deviceD , 'owner' : false   >
+            < cloudA | userA , 'bdKey' : 'SecretOfA' >
+            < cloudA | userC , 'bdKey' : 'SecretOfC' >
+            < deviceB | 'bdKey' : '' , 'pressed' : false > 
+            < deviceD | 'bdKey' : '' , 'pressed' : false > 
+            < userC | 'localTo' : deviceD , 'know' : ('SecretOfC' ) > 
+            < maliciousApp | 'localTo' : deviceB >
+            < userA | 'localTo' : deviceB , 'know' : ('SecretOfA') , 'bindStatus' : 'ready' , 'counter' : 0 >  .
+
+vars UserX UserY : User .
+vars DeviceX DeviceY : Device .
+vars Key1 Key2 Status : Qid .
+vars ...  ....  : Set .
+vars S : Soup .
+vars Any Any' : Bool .
+
+***device rule
+eq  < DeviceX | 'pressed' : false , ... > < UserX | 'localTo' : DeviceX , .... >  
+    $ UserX 'pressButton' DeviceX 
+  = < DeviceX | 'pressed' : true  , ... > < UserX | 'localTo' : DeviceX , .... > .
+
+eq < DeviceX | 'bdKey' : Key1 , 'pressed' : true , ... > < UserX | 'localTo' : DeviceX , .... >  
+   $ UserX 'callAPI:setKey' DeviceX | Key2
+ = < DeviceX | 'bdKey' : Key2 , 'pressed' : false , ... > < UserX | 'localTo' : DeviceX , .... > 
+   $ DeviceX 'callAPI:bind' cloudA | Key2 .
+
+***cloud rule
+eq < cloudA | DeviceX , 'owner' : false , ... > < cloudA | UserX , 'bdKey' : Key1   >
+   $ DeviceX 'callAPI:bind' cloudA | Key1 
+ = < cloudA | DeviceX , 'owner' : UserX , ... > < cloudA | UserX , 'bdKey' : Key1   >
+   $ cloudA 'notify:beOwner' UserX .
+
+eq < cloudA | DeviceX , 'owner' : UserY , ... > $ DeviceX 'callAPI:bind' cloudA | Key1 
+   < cloudA | UserX , 'bdKey' : Key1 , ....  >
+ = < cloudA | DeviceX , 'owner' : UserX , ... > $ cloudA 'notify:beOwner' UserX 
+   < cloudA | UserX , 'bdKey' : Key1 , ....  > $ cloudA 'alert:revoked' UserY .
+
+*** userA rule
+eq < userA | 'bindStatus' : Status ,  ... > $ cloudA 'alert:revoked' userA 
+ = < userA | 'bindStatus' : 'revoked'  , ... >  . 
+eq < userA | 'bindStatus' : Status ,  ... > $ cloudA 'notify:beOwner' userA 
+ = < userA | 'bindStatus' : 'success' ,  ... > . 
+
+endm
+
+mod TRANSITION is
+*** more permissive to achieve compeleteness
+including SYSTEM .
+
+vars K Status : Qid . 
+var Keys : Set .
+vars S S' : Soup .
+var E : Event .
+var N : Nat .
+vars D D' : Device .
+vars ... .... : Attributes .
+
+***$1: Analyzer input minial nomal user RTE operation sequence 
+ops ua1 ua2 ua3 : -> Event .
+ops uc1 uc3 : Device -> Event .
+ops uc2 : Device Qid -> Event .
+eq ua1 = $ userA 'pressButton' deviceB .
+eq ua2 = $ userA 'callAPI:setKey' deviceB | 'SecretOfA' .
+
+eq uc1(D)    = $ userC 'pressButton' D .
+eq uc2(D , K) = $ userC 'callAPI:setKey' D | K .
+eq uc3(D , K) = $ maliciousApp 'callAPI:setKey' D | K .
+
+*** userA operation rl rule, generate from $1
+crl [um1] : 
+       E   @ S < userA | 'bindStatus' : Status , 'counter' : N , ... > 
+=> ep: ua1 @ S < userA | 'bindStatus' : 'progress' ,'counter' : N + 1 , ... > 
+  if Status == 'revoked' or Status == 'ready' . ***turn limit: 10
+rl [um2] : 
+       E    @ S < userA | 'bindStatus' : 'progress' , ... > 
+=> ep: ua2  @ S < userA | 'bindStatus' : 'progress' , ... > .
+
+*** userC operations rl rule, generate heuristicly from $2.
+rl [am1] :    
+            E @ S < userC | 'localTo' : D , ... > 
+=> ep: uc1(D) @ S < userC | 'localTo' : D , ... > .
+
+rl [am2] : 
+           E      @ S < userC | 'localTo' : D , 'know' : (K , Keys) , ... > < D | 'pressed' : true , .... >
+=> ep: uc2(D , K) @ S < userC | 'localTo' : D , 'know' : (K , Keys) , ... > < D | 'pressed' : true , .... >  .
+
+rl [am3] : 
+           E      @ S < userC | 'know' : (K , Keys) , ... > < D | 'pressed' : true , .... >
+=> ep: uc3(D , K) @ S < userC | 'know' : (K , Keys) , ... > < D | 'pressed' : true , .... >  .
+
+crl [ac] :                      E @ S < userC | 'localTo' : D , ... > 
+  => $ userC 'approaches' deviceB @ S < userC | 'localTo' : deviceB , ... > if D =/= deviceB  .
+crl [al] :                  E @ S < userC | 'localTo' : D , ... >  
+  => $ userC 'leaves' deviceB @ S < userC | 'localTo' : deviceD , ... > if D =/= deviceD .
+
+endm
+

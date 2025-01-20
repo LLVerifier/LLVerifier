@@ -1,0 +1,4 @@
+admin/
+test/*
+.gitconfig
+push.sh

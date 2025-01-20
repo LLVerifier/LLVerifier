@@ -1,0 +1,88 @@
+load ../../Iot .
+mod SYSTEM is
+protecting Iot .
+eq init = idle @ < cloudA | deviceB : ('trust' : userA ) > 
+            < cloudA | 'key' : 'cloudAPrivKey' , 'pubkey' : pub('cloudAPrivKey') >
+            < deviceB | 'accessControl' : ('trust' : userA , 'pubkey' : pub('cloudAPrivKey')) > 
+            < deviceB | 'operationalStatus' : ('onoff' : false) > 
+
+            < userC | 'localTo' : deviceD >
+            < userA | 'localTo' : deviceD > .
+
+vars UserX UserY UserZ : User .
+vars KeyA KeyB : Qid .
+var DeviceX : Device .
+vars ...  ....  SetX SetY : Set .
+var Args : List .
+vars B : Bool .
+
+***device rule
+eq  < DeviceX | 'accessControl' : ('trust' : SetX , 'pubkey' : pub(KeyA)) > 
+    $ UserX 'proxy' DeviceX | (encrypt(KeyA , 'auth') ; 'callAPI:share' ; UserY)
+  = < DeviceX | 'accessControl' : ('trust' : (UserY , SetX) , 'pubkey' : pub(KeyA)) > .
+
+eq  < DeviceX | 'accessControl' : ('trust' : (UserY , SetX) , 'pubkey' : pub(KeyA)) > 
+    $ UserX 'proxy' DeviceX | (encrypt(KeyA , 'auth') ; 'callAPI:revoke' ; UserY)
+  = < DeviceX | 'accessControl' : ('trust' : SetX , 'pubkey' : pub(KeyA) ) > .
+
+eq  < DeviceX | 'operationalStatus' : ('onoff' : B ) > 
+    $ UserX 'toggle' DeviceX 
+  = < DeviceX | 'operationalStatus' : ('onoff' : (not B)) > .
+ 
+***cloud rule
+eq < cloudA | DeviceX : ('trust' : (UserX,SetX) ) > < UserZ | 'localTo' : DeviceX , ... >
+   < cloudA | 'key' : KeyA , .... >
+   $ UserX 'callAPI:share' cloudA | (UserY ; DeviceX)
+ = < cloudA | DeviceX : ('trust' : (UserY,UserX,SetX) ) >  < UserZ | 'localTo' : DeviceX , ... >
+   < cloudA | 'key' : KeyA , .... >
+   $ cloudA 'proxy' UserZ | (DeviceX ; encrypt(KeyA , 'auth') ; 'callAPI:share' ; UserY) .
+
+eq < cloudA | DeviceX : ('trust' : (UserY,UserX,SetX) ) > < UserZ | 'localTo' : DeviceX , ... >
+   < cloudA | 'key' : KeyA , .... >
+   $ UserX 'callAPI:revoke' cloudA | (UserY ; DeviceX)
+ = < cloudA | DeviceX : ('trust' : (UserX,SetX) ) > < UserZ | 'localTo' : DeviceX , ... > 
+   $ cloudA 'proxy' UserZ | (DeviceX ; encrypt(KeyA , 'auth') ; 'callAPI:revoke' ; UserY) .
+
+eq < userA |  'localTo' : DeviceX , ... > $ cloudA 'proxy' UserX | (DeviceX ; Args)
+ = < userA |  'localTo' : DeviceX , ... > $ userA 'proxy' DeviceX | Args .
+
+eq < userC |  'localTo' : DeviceX , ... > $ cloudA 'proxy' UserX | (DeviceX ; Args)
+ = < userC |  'localTo' : DeviceX , ... > < userC |  'to' : DeviceX , 'cmd' : list(Args) > .
+
+endm
+
+mod TRANSITION is
+including SYSTEM .
+
+var Args : List .
+vars S S' : Soup .
+var E : Event .
+vars ... .... SetX SetY : Set .
+
+ops ua1 ua2  : -> Event .
+ops uc1 uc2 : Qid -> Event .
+eq ua1 = $ userA 'callAPI:share' cloudA | (userC ; deviceB) .
+eq ua2 = $ userA 'callAPI:revoke' cloudA | (userC ; deviceB)  .
+
+eq uc1(Args)    = $ userC 'proxy' deviceB | Args .
+eq uc2(Args)    = $ userC 'discard' deviceB | Args .
+
+rl [um1] : E @ S => ua1 @ S ua1 .
+
+rl [um2] : E @ S  => ua2 @ S ua2 .
+
+rl [am1] : 
+     E      @ S < userC | 'localTo' : deviceB , ... > < userC |  'to' : deviceB , 'cmd' : list(Args) >
+  => uc1(Args) @ S < userC | 'localTo' : deviceB , ... > uc1(Args) .
+
+rl [am2] : 
+     E      @ S < userC | 'localTo' : deviceB , ... > < userC |  'to' : deviceB , 'cmd' : list(Args) >
+  => uc2(Args) @ S < userC | 'localTo' : deviceB , ... >  uc2(Args) .
+
+rl [ac] : E @ S < userC | 'localTo' : deviceD , ... > 
+   => $ userC 'approaches' deviceB @ S < userC | 'localTo' : deviceB , ... >  .
+rl [al] : E @ S < userC | 'localTo' : deviceB , ... >  
+   => $ userC 'leaves' deviceB @ S < userC | 'localTo' : deviceD , ... > .
+
+endm
+

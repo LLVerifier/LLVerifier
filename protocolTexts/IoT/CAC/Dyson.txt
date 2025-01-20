@@ -1,0 +1,12 @@
+When any device has any key, and the owner user calls device API 'callAPI:toggle' with the same key as an argument, then the device will be on.
+When the cloud records any user information, and the user calls the cloud API 'callAPI:invite' with any invited user as an argument, the cloud will add the invited user to members.
+When the cloud records any user has any member user, and the user call the cloud API 'callAPI:kick' with the member user as an argument, the cloud will remove the member user from members.
+When the cloud records any user has any device that has any key, and the user calls the cloud API 'callAPI:getKey' with the device, then the cloud will trigger events that send the device's key to the user.
+When the cloud records any user has any device which is off, and the user calls the cloud API 'callAPI:toggle', the device will be on.
+When the cloud records any user has any device which is off and the user has any member user, and the member user calls the cloud API 'callAPI:toggle', the device will be on.
+When g cloud sends any user any keys, the user will add the key to his knowledge.
+
+when any user knows any key, he can call device API 'callAPI:toggle' with the key to any device.
+Any user can call the cloud API 'callAPI:invite' with anotther user.
+In any condition, any user can call cloud API 'callAPI:toggle' and 'callAPI:getKey' to the cloud.
+If any user has some members, any user can call the cloud API 'callAPI:kick' with the member user.   

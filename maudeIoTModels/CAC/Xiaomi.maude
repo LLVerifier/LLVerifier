@@ -1,0 +1,76 @@
+load ../../Iot .
+mod SYSTEM is
+pr Iot .
+eq init = idle @  
+            < cloudA | userA : ('members' : nils , 'devices' : deviceB)  >
+            < cloudA | deviceB : ('localKey' : 'secretOfB') >
+            < deviceB | 'accessControl' : ('localKey' : 'secretOfB') >
+            < deviceB | 'operationStatus' : ('onoff' : false) >
+            < userC | 'know' : nils >
+            < userA | 'know' : nils > .
+
+vars UserX UserY : User .
+vars KeyA KeyB : Qid .
+vars DeviceB : Device .
+vars ...  ....  SetX SetY : Set .
+vars B : Bool .
+
+eq < DeviceB | 'accessControl' : ('localKey' : KeyA)  > 
+   < DeviceB | 'operationStatus' : ('onoff' : B) > $ UserX 'toggle' DeviceB | KeyA
+ = < DeviceB | 'accessControl' : ('localKey' : KeyA)  >
+   < DeviceB | 'operationStatus' : ('onoff' : (not B)) > .
+
+eq < cloudA | UserX : ('members' : SetX , ...) > $ UserX 'invite' cloudA | UserY
+ = < cloudA | UserX : ('members' : (UserY,SetX) , ...) > .
+
+eq < cloudA | UserX : ('members' : (UserY,SetX) , ...) > $ UserX 'kick' cloudA | UserY
+ = < cloudA | UserX : ('members' : SetX , ...) > .
+
+eq < cloudA | DeviceB : ('localKey' : KeyA) > 
+   < cloudA | UserY : ('members' : (UserX , SetX) , 'devices' : (DeviceB, SetY)) > 
+   $ UserX 'callAPI:getKey' cloudA | DeviceB
+ = < cloudA | DeviceB : ('localKey' : KeyA) > 
+   < cloudA | UserY : ('members' : (UserX , SetX) , 'devices' : (DeviceB, SetY)) > 
+   $ cloudA 'respAPI:getKey' UserX | KeyA .
+
+eq < cloudA | UserX : ('members' : SetX , 'devices' : (DeviceB, SetY)) > $ UserX 'callAPI:toggle' cloudA | DeviceB
+   < deviceB | 'operationStatus' : ('onoff' : B) >
+ = < cloudA | UserX : ('members' : SetX , 'devices' : (DeviceB, SetY)) > 
+   < deviceB | 'operationStatus' : ('onoff' : (not B)) > .
+
+eq < cloudA | UserX : ('members' : (UserY, SetX) , 'devices' : (DeviceB, SetY)) > $ UserY 'callAPI:toggle' cloudA | DeviceB
+   < deviceB | 'operationStatus' : ('onoff' : B) >
+ = < cloudA | UserX : ('members' : (UserY, SetX) , 'devices' : (DeviceB,SetY)) > 
+   < deviceB | 'operationStatus' : ('onoff' : (not B)) > .
+endm
+mod TRANSITION is
+inc SYSTEM .
+
+vars K : Qid . 
+var Keys : Set .
+vars S : Soup .
+var E : Event .
+vars ... SetX : Set .
+
+ops ua1 ua2 uc1 uc2 : -> Event .
+ops uc3 : Qid -> Event .
+eq ua1 = $ userA 'invite' cloudA | userC .
+eq ua2 = $ userA 'kick' cloudA | userC  .
+
+eq uc1 = $ userC 'callAPI:getKey' cloudA | deviceB .
+eq uc2 = $ userC 'callAPI:toggle' cloudA | deviceB .
+eq uc3(K) = $ userC 'toggle' deviceB | K .
+
+rl [um1] : E @ S => ua1 @ S ua1 .
+
+rl [um2] : E @ S  => ua2 @ S ua2 .
+
+rl [am1] : E @ S => uc1 @ S uc1 .
+
+rl [am2] : E @ S => uc2 @ S uc2 .
+
+rl [am3] : 
+     E      @ S < userC | 'know' : (K , Keys) , ... > 
+  => uc3(K) @ S < userC | 'know' : (K , Keys) , ... > uc3(K) .
+endm
+

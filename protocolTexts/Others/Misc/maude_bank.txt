@@ -1,0 +1,13 @@
+Bank account as a record-like structure with the name of the object, its class name (Account) and a bal(ance) attribute, say, a natural number. 
+Accounts can be updated by receiving different messages and changing their state accordingly.
+We have debit and credit messages, such as credit(’A-002, 50) and debit(’A-001, 25)
+
+
+
+var I : Qid .
+vars N M : Nat .
+rl < I : Account | bal : M > credit(I, N)
+=> < I : Account | bal : (M + N) > .
+crl < I : Account | bal : M > debit(I, N)
+=> < I : Account | bal : (M - N) >
+if M >= N .

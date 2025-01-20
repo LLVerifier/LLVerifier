@@ -1,0 +1,35 @@
+mod ACCOUNT is 
+ including BOOL . 
+ including CONFIGURATION . 
+ protecting QID . 
+ protecting INT . 
+ sort Account . 
+ subsort Qid < Oid . 
+ subsort Account < Cid . 
+ op credit : Oid Int -> Msg [ctor msg] . 
+ op debit : Oid Int -> Msg [ctor msg] . 
+ op from_to_transfer_ : Oid Oid Int -> Msg [ctor msg prec 41 gather (& & E)] . 
+ op Account : -> Account [ctor] . 
+ op bal‘:_ : Int -> Attribute [ctor prec 15 gather (&)] . 
+ var A : Oid . 
+ var B : Oid . 
+ var N : Int . 
+ var M : Nat . 
+ var N’ : Int . 
+ rl [credit] : 
+    credit(A, M) 
+    < A : V:Account | Atts:AttributeSet, bal : N > 
+    => < A : V:Account | Atts:AttributeSet, bal : (M + N) > . 
+ crl [debit] : 
+    debit(A, M) 
+    < A : V:Account | Atts:AttributeSet, bal : N > 
+    => < A : V:Account | Atts:AttributeSet, bal : (N - M) > 
+    if N >= M = true . 
+ crl [transfer] : 
+    < A : V:Account | Atts:AttributeSet, bal : N > 
+    < B : V2:Account | Atts2:AttributeSet, bal : N’ > 
+    from A to B transfer M 
+    => < A : V:Account | Atts:AttributeSet, bal : (N - M) > 
+      < B : V2:Account | Atts2:AttributeSet, bal : (M + N’) > 
+    if N >= M = true . 
+endm

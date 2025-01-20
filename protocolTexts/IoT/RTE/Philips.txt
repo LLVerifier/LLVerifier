@@ -1,0 +1,16 @@
+If any user who is local to any device presses the button on the device, then the device will call the cloud API 'callAPI:setKey' with random string secret (event).
+When the cloud records any device's information that there is no tickets, and the device call the cloud API 'callAPI:setKey' with any key, the cloud will update the device's information with the key and add a ticket which records the key and the current time (there is a set containing all the tickets) .
+When the cloud records any device's information that the device has an old key, and the device calls the cloud API 'callAPI:setKey' with any new key, the cloud will update the device's information with the new key and generate a ticket which records the key and the current time.
+If any user who is local to any device calls the cloud API 'callAPI:getKey' with the device as an argument, and the cloud has a ticket showing that this device has some key, and the current time is less than the time in ticket + 1, then the cloud will trigger a event that transfer the key to the user.
+When any device has no owner, the user calls 'callAPI:bind' to the cloud, and pass the device and the key to the cloud. If the binding key matches the ticket in the cloud, then the cloud will update the owner from nils to a set containing the user (bind success).
+When any device already has an owner, any user calls 'callAPI:bind' to the cloud, and passes the device and the key to the cloud. If the binding key matches the ticket in the cloud, and the cloud records any user's information that its uid (of type Qid), then the cloud will transfer the owner's uid to the user.
+When any device already has an owner, any user who is local to the device can call 'callAPI:join' to the cloud, and pass the owner id and the key to the cloud. If the key matches the ticket in the cloud, and the uid matches the owner's that recorded in the cloud, then the cloud will add the user as another owner.
+The ticket in the cloud will be removed when the current time is bigger than the time recorded in ticket + 2.
+
+If any user is local to any device, the user can:
+1. press the device button ;
+2. call the device's API 'callAPI:getKey'.
+If any user has any key, the user can use the key to call the cloud 's API 'callAPI:bind'.
+If any user has ant key and has ant UID, the user uses the UID and key to call the cloud 's API 'callAPI:join'.
+When any user is local to any device, the user can leave the device.
+When any user is not local to any device, he can approach the device.

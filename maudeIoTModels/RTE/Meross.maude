@@ -1,0 +1,102 @@
+load ../../Iot .
+mod SYSTEM is
+pr Iot .
+eq init = idle @ < cloudA | deviceB : ( 'owner' : nils , 'key' : 'SecretOfB' )> 
+            < cloudA | deviceD : ( 'owner' : nils , 'key' : 'SecretOfD' ) >
+            < cloudA | userA : ( 'key' : 'UIDofA') >
+            < cloudA | userC : ( 'key' : 'UIDofC') >
+            < deviceB | 'key' : 'SecretOfB' , 'pressed' : false > 
+            < deviceD | 'key' : 'SecretOfD' , 'pressed' : false > 
+            < userC | 'localTo' : deviceD , 'know' : ('UIDofA' , 'UIDofC' ) > 
+            < userA | 'localTo' : deviceB , 'know' : ('UIDofA') , 'bindStatus' : 'ready' , 'counter' : 0 >  .
+vars PrincipalX : Principal .
+vars UserX UserY : User .
+vars DeviceX DeviceY : Device .
+vars Key1 Key2 KeyA KeyB Status : Qid .
+vars ...  ....  : Set .
+vars S : Soup .
+vars Any Any' : Bool .
+vars N : Nat .
+
+***device rule
+eq  < DeviceX | 'pressed' : false , 'key' : KeyA , ... > < UserX | 'localTo' : DeviceX , .... >  
+    $ UserX 'pressButton' DeviceX 
+  = < DeviceX | 'pressed' : true  , 'key' : KeyA , ... > < UserX | 'localTo' : DeviceX , .... >
+    $ DeviceX 'transfer' UserX | KeyA .
+
+eq < DeviceX | 'key' : KeyA , 'pressed' : true , ... > < UserX | 'localTo' : DeviceX , .... >  
+   $ UserX 'callAPI:bind' DeviceX | KeyB
+ = < DeviceX | 'key' : KeyA , 'pressed' : false , ... > < UserX | 'localTo' : DeviceX , .... > 
+   $ DeviceX 'callAPI:bind' cloudA | (DeviceX ; KeyA ; KeyB) .
+
+***cloud rule
+eq < cloudA | DeviceX : ('owner' : nils , 'key' : KeyA) > < cloudA | UserX : ('key' : KeyB) >
+   $ PrincipalX 'callAPI:bind' cloudA | (DeviceX; KeyA ; KeyB) 
+ = < cloudA | DeviceX : ('owner' : UserX , 'key' : KeyA) > < cloudA | UserX : ('key' : KeyB) >
+   $ cloudA 'notify:beOwner' UserX  .
+
+eq < cloudA | DeviceX : ( 'owner' : UserY , 'key' : KeyA ) > < cloudA | UserX : ('key' : KeyB , ....) >
+   $ PrincipalX 'callAPI:bind' cloudA | (DeviceX ; KeyA ; KeyB)
+ = < cloudA | DeviceX : ( 'owner' : UserX , 'key' : KeyA ) > < cloudA | UserX : ('key' : KeyB , ....) >
+   $ cloudA 'notify:beOwner' UserX
+   $ cloudA 'alert:revoked' UserY .
+
+*** userA rule
+eq < userA | 'bindStatus' : Status ,  ... > $ cloudA 'alert:revoked' userA
+ = < userA | 'bindStatus' : 'revoked'  , ... >  . 
+eq < userA | 'bindStatus' : Status ,  ... > $ cloudA 'notify:beOwner' userA
+ = < userA | 'bindStatus' : 'success' ,  ... > . 
+
+endm
+
+mod TRANSITION is
+*** more permissive to achieve compeleteness
+including SYSTEM .
+
+vars K K' Status : Qid . 
+var Keys : Set .
+vars S S' : Soup .
+var E : Event .
+var N : Nat .
+vars D D' : Device .
+var Any : Bool .
+vars ... .... : Attributes .
+
+ops ua1 ua2 ua3 : -> Event .
+ops uc1 uc3 : Device -> Event .
+ops uc2 : Device Qid -> Event .
+eq ua1 = $ userA 'pressButton' deviceB .
+eq ua2 = $ userA 'callAPI:bind' deviceB | 'SecretOfA' .
+
+eq uc1(D)    = $ userC 'pressButton' D .
+eq uc2(D , K) = $ userC 'callAPI:bind' D | K .
+eq uc3(D , K , K') = $ userC 'callAPI:bind' cloudA | (D ; K ; K') .
+
+crl [um1] : 
+     E   @ S < userA | 'bindStatus' : Status , 'counter' : N , ... > 
+  => ua1 @ S < userA | 'bindStatus' : 'progress' ,'counter' : N + 1 , ... > ua1 
+  if Status == 'revoked' or Status == 'ready' . 
+rl [um2] : 
+    E    @ S < userA | 'bindStatus' : 'progress' , ... > 
+ => ua2  @ S < userA | 'bindStatus' : 'progress' , ... > ua2 .
+
+rl [am1] :    
+         E @ S < userC | 'localTo' : D , ... > 
+ => uc1(D) @ S < userC | 'localTo' : D , ... > uc1(D) .
+
+rl [am2] : 
+        E      @ S < userC | 'localTo' : D , 'know' : (K , Keys) , ... > < D | 'pressed' : true , .... >
+ => uc2(D , K) @ S < userC | 'localTo' : D , 'know' : (K , Keys) , ... > < D | 'pressed' : true , .... > uc2(D , K)  .
+
+rl [am3] : 
+        E      @ S < userC | 'know' : (K, K', Keys) , ... >  < D | 'pressed' : Any , .... >
+ => uc3(D , K , K') @ S < userC | 'know' : (K, K', Keys) , ... > < D | 'pressed' : Any , .... > uc3(D , K , K') .
+
+
+rl [ac] :                       E @ S < userC | 'localTo' : deviceD , ... > 
+  => $ userC 'approaches' deviceB @ S < userC | 'localTo' : deviceB , ... > .
+rl [al] :                   E @ S < userC | 'localTo' : deviceB , ... >  
+  => $ userC 'leaves' deviceB @ S < userC | 'localTo' : deviceD , ... > .
+
+endm
+

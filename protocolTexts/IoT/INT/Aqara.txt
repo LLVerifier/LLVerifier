@@ -1,0 +1,13 @@
+When any device has no key, and cloudA calls device API 'callAPI:openWindow' with any key as an argument, then the device will record the new key. 
+When any device has any key, and any user calls device API 'callAPI:bind' with the same key, then the device will add the user to its owner.
+When any device which has an owner is off, and the owner user calls device API 'callAPI:toggle', then the device will be on.
+When cloudA records any user information, and the user call cloudA API 'callAPI:invite' with any invited user as argument, the cloud will add the invited user to members.
+When cloudA records any user has any member user, and the user call cloudA API 'callAPI:kick' with the member user as argument, the cloud will remove the member user from members.
+When cloudA records that any user has any member user and any device, and the member user calls cloudA API 'callAPI:openWindow' with the device, then cloudA will trigger two events: 1. call the device API 'callAPI:openWindow' with a fresh key, 2. send the fresh key to the member user.
+When the cloudA sends any user any keys, the user will add the key to his knowledge.
+
+when any user knows any key, he can call cloudA API 'callAPI:openWindow' with the key.
+In any condition, any user can call API 'callAPI:toggle' to any device.
+The userA can call cloudA API 'callAPI:invite' with userC.
+The userC can call cloudA API 'callAPI:invite' with userA.
+If any user has some members, any user can call cloudA API 'callAPI:kick' with the member user.

@@ -1,0 +1,13 @@
+All devices know the cloud's certificate.  
+If any device records any user in its trust set, and the user calls the API `toggle` on that device, the device will toggle its `onoff` attribute.  
+If the cloud has recorded two users in any device's trust set and one of the users, who is local to the device, calls `callAPI:revoke` with the other user as an argument, the cloud will remove the revoked user from the trust set and send the calling user a signed command that allows them to proxy to the device. The command consists of the API name `callAPI:revoke` and the revoked user.  
+If the cloud has recorded a user in any device's trust set and the user, who is local to the device, calls `callAPI:share` with another user as an argument, the cloud will add the invited user to the trust set and send the user a signed command that allows them to proxy to the device. The command consists of the API name `callAPI:share` and the shared user.  
+If any user is local to any device and proxies a cloud command with API `callAPI:share` and the invited user to that device, the device will add the invited user to its trust set.  
+If any userX is local to any device that records some userY in its trust set, and userX proxies a cloud command with API `callAPI:revoke` and userY to that device, the device will remove userY from its trust set.  
+If the cloud has recorded two users in any device's trust set and one of the users calls `callAPI:revoke` with the other, the cloud will remove the kicked user from the trust set.  
+If the cloud sends any user a device and a command list while the user is local to the device, the user can proxy that command list to the device.  
+If a user is local to any device, they can call the API `callAPI:proxy` on the device with a command list.  
+If a user is local to any device, they can call the API `callAPI:discard` on the device with a command list.  
+If a user is local to any device, they can call the API `toggle` on the device.  
+A local user can leave the device.  
+A remote user can approach a device to become local.

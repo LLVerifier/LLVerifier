@@ -1,0 +1,16 @@
+If any device has a key and any user calls the API `callAPI:getKey`, the user will update their knowledge with the device's key.  
+If the cloud has recorded a user in any device's trust set and the user calls `callAPI:share` with another user as an argument, the cloud will add the invited user to the trust set.  
+If the cloud has recorded two users in any device's trust set and one of the users calls `callAPI:revoke` with the other, the cloud will remove the kicked user from the trust set.  
+If the cloud records that a user is in any device's trust set, and the user calls `callAPI:signKey` with the device and a key as arguments, the cloud will sign the key with its certificate and send it to the user.  
+If the cloud sends any user any signed key, the user will remember the signed key.  
+If any device has a key, and a user calls `callAPI:bind` on the device with a signed key from the cloud that matches the device key, the device will add the user to its owner set.  
+If a user who is not local to a device approaches it, they become local to that device.  
+If a user is local to a device and then leaves, they become remote to that device.  
+A local user can press the device's button.  
+If a user is local to a device, they can call the API `callAPI:getKey` on that device.  
+If a user has a signed key and is local to a device, they can call the API `callAPI:bind` on that device with the signed key as an argument.  
+If a user has a key (regardless of whether they are local or remote), they can call the cloud API `callAPI:sign` with the key.  
+Any user can call the cloud API `callAPI:share` with another user and the shared device.  
+Any user can call the cloud API `callAPI:revoke` with another user and the shared device.  
+A local user can leave the device.  
+A remote user can approach a device to become local.

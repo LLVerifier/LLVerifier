@@ -1,0 +1,14 @@
+When any user is not local to any device and the user approaches the device, the user will be local to the device.
+When any user is local to any device and the user leaves any device, the user will be remote to the device.
+When any user presses the button on any device, then the device will record that it is pressed, is online, and triggers an event to send the user its key.
+When any device sends any user a key and the user has no key, the user will know the key.
+When the cloud records that the device has any key, the user calls 'callAPI:bind' with the device and the same key as arguments to the cloud, and the device is online, then the cloud will update the owner from empty set to the user, and the device will update its owner from empty to the user.
+When cloud records that any device has an owner, the owner can call 'callAPI:reset' of the cloud with the device, and then the cloud will reset the owner to empty set, and trigger an event to reset the device.
+When any device is online and the cloud wants to reset the device, the device will be offline and change its owner to empty.
+
+If any user is local to any device, the user can press the device button.
+If any user has some key, the user can:
+1. use the key to call the cloud API 'callAPI:bind' ;
+2. use the key to call the cloud API 'callAPI:reset'.
+When any user is local to any device, the user can leave the device. 
+When any user is not local to any device, the user can approach the device.

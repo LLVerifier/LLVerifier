@@ -1,0 +1,89 @@
+load ../../Iot .
+mod SYSTEM is
+pr Iot .
+ops smartThings googleHome : -> Cloud .
+ops lock switch : -> Device .
+eq init = idle @ < googleHome | switch : ('key' : 'idOfSwitch' , 'trust' : userA, 'onoff' : false) > 
+            < smartThings | switch : ('key' : 'idOfSwitch' , 'trust' : googleHome, 'onoff' : false , 'bind' : lock) >
+            < lock | 'trust' : smartThings , 'onoff' : false > *** change to two state conpromise "accesscontrol","operationStatus"
+            < userC | 'know' : nils >
+            < userA | 'know' : nils > .
+
+vars PrincipalX : Principal .
+var Act : Action .
+vars UserX UserY : User .
+vars CloudX CloudY : Cloud .
+vars KeyA KeyB Status : Qid .
+vars DeviceX DeviceY : Device .
+vars ...  ....  SetX SetY : Set .
+vars S : Soup .
+vars Any Any' B : Bool .
+vars N N' : Nat .
+
+*** IoT delegation of trust chain ***
+***device rule
+eq < lock | 'trust' : (PrincipalX,SetX) , 'onoff' : B > $ PrincipalX 'toggle' lock
+ = < lock | 'trust' : (PrincipalX,SetX) , 'onoff' : (not B) > .
+
+***cloud rule
+eq  < CloudX | DeviceX : ('trust' : (PrincipalX,SetX), 'onoff' : B, ...) > 
+    $ PrincipalX 'toggle' DeviceX 
+  = < CloudX | DeviceX : ('trust' : (PrincipalX,SetX), 'onoff' : (not B), ...) >
+    $ CloudX 'toggle' DeviceX . 
+
+eq < smartThings | DeviceX : ('bind' : DeviceY,...) >
+   $ smartThings Act DeviceX
+ = < smartThings | DeviceX : ('bind' : DeviceY,...) >
+   $ smartThings Act DeviceY .
+
+eq < CloudX | DeviceX : ('trust' : (UserX ,SetX) , 'key' : KeyA ,...) >
+   $ UserX 'callAPI:getKey' CloudX | DeviceX
+ = < CloudX | DeviceX : ('trust' : (UserX ,SetX) , 'key' : KeyA ,...) >
+   $ CloudX 'transfer' UserX | KeyA .
+
+eq < CloudX | DeviceX : ('trust' : (UserX , SetX) ,...) > 
+   $ UserX 'delegate' CloudX | (UserY ; DeviceX)
+ = < CloudX | DeviceX : ('trust' : (UserY , UserX , SetX) ,...) > .
+
+eq < CloudX | DeviceX : ('trust' : (UserY , UserX , SetX) ,...) > 
+   $ UserX 'revoke' CloudX | (UserY ; DeviceX)
+ = < CloudX | DeviceX : ('trust' : (UserX , SetX) ,...) > .
+
+*** fake vitual device
+eq < smartThings | DeviceX : ('key' : KeyA , 'trust' : SetX,...  ) > $ PrincipalX 'provide' smartThings | (DeviceX ; KeyA)
+ = < smartThings | DeviceX : ('key' : KeyA , 'trust' : (PrincipalX , SetX),...  ) > .
+
+endm
+mod TRANSITION is
+inc SYSTEM .
+
+vars K Status : Qid . 
+var Keys : Set .
+vars S S' : Soup .
+var E : Event .
+var Any : Bool .
+var N : Nat .
+vars ... .... SetX SetY : Set .
+
+ops ua1 ua2 uc1 uc2 : -> Event .
+ops uc3 : Qid -> Event .
+eq ua1 = $ userA 'delegate' googleHome | (userC ; switch) .
+eq ua2 = $ userA 'revoke' googleHome | (userC ; switch)  .
+
+eq uc1 = $ userC 'callAPI:getKey' googleHome | switch .
+eq uc2 = $ userC 'toggle' switch .
+eq uc3(K) = $ userC 'provide' smartThings | (switch ; K)  .
+
+rl [um1] : E @ S => ua1 @ S ua1 .
+
+rl [um2] : E @ S  => ua2 @ S ua2 .
+
+rl [am1] : E @ S => uc1 @ S uc1 .
+
+rl [am2] : E @ S => uc2 @ S uc2 .
+
+rl [am3] : 
+     E      @ S < userC | 'know' : (K , Keys) , ... > 
+  => uc3(K) @ S < userC | 'know' : (K , Keys) , ... > uc3(K) .
+endm
+

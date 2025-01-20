@@ -1,0 +1,155 @@
+load ../../Iot .
+mod SYSTEM is
+protecting Iot .
+***$3: Analyzer input:inital state 
+eq init = idle @ < cloudA | deviceB : ('bdKey' : '' , 'owner' : false) > 
+            < deviceB | 'bdKey' : '' , 'pressed' : false , 'online' : false > 
+            < userC | 'localTo' : deviceD , 'know' : 'SecretOfC' >
+            < userA | 'localTo' : deviceB , 'bindStatus' : 'ready' , 'bdKey' : '' , 'counter' : 0 > .
+*** Item , Set --> Attributes
+***$2: Analyzer input: principal reaction rules 
+*** deterministic reduction rule
+vars UserX UserY : User .
+vars DeviceX : Device .
+vars KeyA KeyB Status : Qid .
+vars ...  ....  : Set .
+vars Any : Bool .
+
+***device rule
+eq  < DeviceX | 'pressed' : false , ... > < UserX | 'localTo' : DeviceX , .... >  $ UserX 'pressButton' DeviceX 
+  = < DeviceX | 'pressed' : true  , ... > < UserX | 'localTo' : DeviceX , .... > .
+
+eq < DeviceX | 'bdKey' : KeyA , 'pressed' : true , ... > < UserX | 'localTo' : DeviceX , .... >  
+   $ UserX 'callAPI:setKey' DeviceX | KeyB
+ = < DeviceX | 'bdKey' : KeyB , 'pressed' : false , ... > < UserX | 'localTo' : DeviceX , .... >  .
+
+ceq < DeviceX | 'bdKey' : KeyA , 'online' : Any , ... > < UserX | 'localTo' : DeviceX , .... > 
+    $ UserX 'callAPI:discover' DeviceX | KeyA
+ =  < DeviceX | 'bdKey' : KeyA , 'online' : true  , ... > < UserX | 'localTo' : DeviceX , .... > 
+    $ DeviceX 'callAPI:setKey' cloudA | KeyA  if KeyA =/= '' .
+
+ceq < DeviceX | 'bdKey' : KeyA , 'pressed' : true  , ... > < UserX | 'localTo' : DeviceX , .... > 
+    $ UserX 'callAPI:getKey' DeviceX 
+  = < DeviceX | 'bdKey' : KeyA , 'pressed' : false , ... > < UserX | 'localTo' : DeviceX , .... > 
+    $ DeviceX 'respAPI:getKey' UserX | KeyA if KeyA =/= '' .
+
+***cloud rule
+eq < cloudA | DeviceX : ('bdKey' : KeyA , ...) > $ DeviceX 'callAPI:setKey' cloudA | KeyB 
+ = < cloudA | DeviceX : ('bdKey' : KeyB , ... ) > .
+
+**** tell him the the binding success
+ceq < cloudA | DeviceX : ('bdKey' : KeyA , 'owner' : false) >  $ UserX 'callAPI:bind' cloudA | (DeviceX ; KeyA)
+ =  < cloudA | DeviceX : ('bdKey' : KeyA , 'owner' : UserX) >  $ cloudA 'respAPI:bind' UserX | true 
+ if KeyA =/= '' .
+**** tell him the device has already had owners
+eq < cloudA | DeviceX : ('bdKey' : KeyA , 'owner' : UserY) > $ UserX 'callAPI:bind' cloudA | (DeviceX ; KeyA)
+ = < cloudA | DeviceX : ('bdKey' : KeyA , 'owner' : UserY) > $ cloudA 'alert:hasOtherOwner' UserX . 
+
+**** after succefffully reset , the cloud binding key should be set to ''
+eq < cloudA | DeviceX : ('bdKey' : KeyA , 'owner' : UserY) > 
+   < DeviceX | 'bdKey' : KeyB , 'online' : true  , ... > $ UserX 'callAPI:reset' cloudA | (DeviceX ; KeyA)
+ = < cloudA | DeviceX : ('bdKey' : '' , 'owner' : false) > 
+   < DeviceX | 'bdKey' : ''   , 'online' : false , ... > 
+   $ cloudA 'alert:revoked' UserY   $ cloudA 'respAPI:reset' UserX | true .
+eq < cloudA | DeviceX : ('bdKey' : KeyA , 'owner' : UserY) > 
+   < DeviceX | 'bdKey' : KeyB , 'online' : false , ... > $ UserX 'callAPI:reset' cloudA | (DeviceX ; KeyA)
+ = < cloudA | DeviceX : ('bdKey' : '' , 'owner' : false) > 
+   < DeviceX | 'bdKey' : KeyB , 'online' : false , ... > 
+   $ cloudA 'alert:revoked' UserY  $ cloudA 'respAPI:reset' UserX | true .
+
+*** userA rule
+eq < userA | 'bindStatus' : Status , ... > $ cloudA 'alert:hasOtherOwner' userA 
+ = < userA | 'bindStatus' : 'hasOtherOwner' ,  ... >  . 
+eq < userA | 'bindStatus' : Status ,  ... > $ cloudA 'alert:revoked' userA 
+ = < userA | 'bindStatus' : 'revoked'  , ... >  . 
+eq < userA | 'bindStatus' : Status ,  ... > $ cloudA 'respAPI:bind' userA | true
+ = < userA | 'bindStatus' : 'success' ,  ... > . 
+eq < userA | 'bindStatus' : 'hasOtherOwner' , ... > $ cloudA 'respAPI:reset' userA | true
+ = < userA | 'bindStatus' : 'ready' , ... > .
+
+endm
+*** key0 key1 key2 key0
+mod TRANSITION is
+*** more permissive to achieve compeleteness
+including SYSTEM .
+
+vars K Status : Qid . 
+var Keys : Set .
+vars S S' : Soup .
+var E : Event .
+var Any : Bool .
+var N : Nat .
+vars ... .... : Set .
+
+***$1: Analyzer input minial nomal user RTE operation sequence 
+ops ua0 ua1 uc1 uaf uc3 : -> Event .
+ops ua2 ua3 ua4 ua5 uc2 uc4 uc5 uc6 : Qid -> Event .
+eq ua0 = $ userA 'initiateRTE' deviceB .
+eq ua1 = $ userA 'pressButton' deviceB .
+eq ua2(K) = $ userA 'callAPI:setKey' deviceB | K .
+eq ua3(K) = $ userA 'callAPI:discover' deviceB | K .
+eq ua4(K) = $ userA 'callAPI:bind' cloudA | (deviceB ; K)  .
+eq ua5(K) = $ userA 'callAPI:reset' cloudA | (deviceB ; K) .
+
+eq uc1    = $ userC 'pressButton' deviceB .
+eq uc2(K) = $ userC 'callAPI:setKey' deviceB | K .
+eq uc3    = $ userC 'callAPI:getKey' deviceB .
+eq uc4(K) = $ userC 'callAPI:discover' deviceB | K .
+eq uc5(K) = $ userC 'callAPI:bind' cloudA | (deviceB ; K)  .
+eq uc6(K) = $ userC 'callAPI:reset' cloudA | (deviceB ; K) .
+
+*** userA operation rl rule, generate from $1
+*** unconditional generating
+crl [um0] : 
+       E   @ S < userA | 'bindStatus' : Status , 'bdKey' : K , 'counter' : N , ... > 
+=> ep: ua0 @ S < userA | 'bindStatus' : 'progress' , 'bdKey' : randomStr(N) , 'counter' : (N + 1) rem 10 , ... >
+   if Status == 'revoked' or Status == 'ready' . 
+rl [um1] : E @ S  => ep: ua1 @ S .
+crl [um2] : 
+        E      @ S < userA | 'bdKey' : K , 'bindStatus' : 'progress' , ... > 
+ => ep: ua2(K) @ S < userA | 'bdKey' : K , 'bindStatus' : 'progress' , ... > if K =/= '' .
+crl [um3] : 
+        E      @ S < userA | 'bdKey' : K , 'bindStatus' : 'progress' , ... >
+ => ep: ua3(K) @ S < userA | 'bdKey' : K , 'bindStatus' : 'progress' , ... > if K =/= '' .
+crl [um4] : 
+          E    @ S < userA | 'bdKey' : K , 'bindStatus' : 'progress' , ... >
+ => ep: ua4(K) @ S < userA | 'bdKey' : K , 'bindStatus' : 'progress' , ... > if K =/= '' .
+
+crl [uer] : 
+          E    @ S < userA | 'bdKey' : K , 'bindStatus' : 'hasOtherOwner' , ... >  
+ => ep: ua5(K) @ S < userA | 'bdKey' : K , 'bindStatus' : 'hasOtherOwner' , ... >
+ if K =/= '' .
+
+*** userC operations rl rule, generate heuristicly from $2.
+**** these rule for generating actions has premises, that is a place to prune(prefer) or authenticate  .
+rl [am1] : 
+          E @ S < userC | 'localTo' : deviceB , ... > 
+ => ep: uc1 @ S < userC | 'localTo' : deviceB , ... > .
+
+rl [am2] : 
+        E      @ S < userC | 'localTo' : deviceB , 'know' : (K , Keys) , ... > 
+ => ep: uc2(K) @ S < userC | 'localTo' : deviceB , 'know' : (K , Keys) , ... > .
+
+crl [am3] : 
+       E    @ S < userC | 'localTo' : deviceB , ... > < deviceB | 'bdKey' : K , 'pressed' : true , .... > 
+=> ep: uc3  @ S < userC | 'localTo' : deviceB , ... > < deviceB | 'bdKey' : K , 'pressed' : true , .... >
+     if K =/= '' .
+
+rl [am4] : 
+        E      @ S < userC | 'localTo' : deviceB , 'know' : (K , Keys) , ... > 
+ => ep: uc4(K) @ S < userC | 'localTo' : deviceB , 'know' : (K , Keys) , ... > .
+
+rl [am5] : 
+        E      @ S < userC | 'know' : (K , Keys) , ... > 
+ => ep: uc5(K) @ S < userC | 'know' : (K , Keys) , ... >  .
+
+rl [am6] : 
+        E      @ S < userC | 'know' : (K , Keys) , ... > 
+ => ep: uc6(K) @ S < userC | 'know' : (K , Keys) , ... > .
+
+rl [ac] : E @ S < userC | 'localTo' : deviceD , ... > 
+   => $ userC 'approaches' deviceB @ S < userC | 'localTo' : deviceB , ... >  .
+rl [al] : E @ S < userC | 'localTo' : deviceB , ... >  
+   => $ userC 'leaves' deviceB @ S < userC | 'localTo' : deviceD , ... > .
+
+endm

@@ -1,0 +1,20 @@
+If any user is not local to any device and the user approaches the device, the user will be local to the device.
+If any user is local to any device and the user leaves any device, the user will be remote to the device.
+If any user presses the button on any device, then the device records that it is pressed.
+When any device is pressed with no key before, and any user calls device API 'callAPI:setKey', then the device will change its state to be not pressed, record the new key, and call the cloud' s API 'callAPI:setKey' with the new binding key as an argument, change the device's state to record it has a key now.
+When any device which already has a key is pressed, and any user calls device API 'callAPI:setKey', then the device will change its state to be not pressed, record the new key, and call the cloud' s API 'callAPI:setKey' with the new binding key.
+When the cloud receives a 'callAPI:setKey' event from any device, the cloud will update its binding key record for that device.
+When the user calls 'callAPI:bind' with the device and the binding key as arguments to the cloud, and the binding key matches the record in the cloud, then the cloud will update the owner from empty set to the user.
+When any device is pressed and already has a key, and any user calls the device API 'callAPI:getKey', then the device will change its state to be not pressed and trigger an event to send its key to the user. 
+When any device sends any user a key and the user already knows some key, the user will update the key with the new key.
+When any device has an owner, any user can call 'callAPI:reset' of the cloud with the device and binding key which matches that in the cloud's record, and then the cloud will reset the owner to empty set and set the bind key to empty.
+
+If any user is local to any device, the user can :
+1. press the device button ;
+2. call the device's API 'callAPI:getKey' ;
+3. use his key to call any device's API 'callAPI:setKey'.
+When any user is local or remote to any device, if the user has some key, the user can:
+1. use the key to call the cloud API 'callAPI:bind' ;
+2. use the key to call the cloud API 'callAPI:reset'.
+When any user is local to any device, the user can leave the device. 
+When any user is not local to any device, the user can approach the device.

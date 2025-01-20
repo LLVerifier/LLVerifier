@@ -1,0 +1,18 @@
+Initially, the SmartThings cloud records a switch's information, which includes its trust set, a key, and a binding to a lock.  
+The IFTTT cloud records the lock's information, noting that the IFTTT cloud is trusted by the lock and that the lock is off.  
+If any principal is in the trust set of the lock, and the principal calls the API `toggle` on the lock, the lock will toggle its `onoff` attribute.  
+When the SmartThings cloud records that some deviceX is bound to another deviceY, and the cloud performs some action on deviceX, the SmartThings cloud will also perform the same action on deviceY.  
+If any cloud records that any user is in any device's trust set, the device has a key, and the user calls the API `callAPI:getKey` to the cloud, the cloud will transfer the key to the user.  
+
+When any cloud sends a key to any user, the user will know the key.  
+
+If any cloud records that any user is in any device's trust set, and the user calls the API `delegate` to the cloud with a delegated user and the device, the cloud will add the delegated user to the device's trust set.  
+If any cloud records that at least two users are in any device's trust set, and one of the users calls the API `revoke` to the cloud with another revoked user and the device, the cloud will remove the revoked user from the device's trust list.  
+If the SmartThings cloud records that some device has a key, and any principal calls the API `provide` to the cloud with the device and the key, the cloud will add the principal to the device's trust set.  
+
+Any user can call the SmartThings cloud API `callAPI:getKey` with the device.  
+Any user can call the SmartThings cloud API `delegate` with another user and a device.  
+Any user can call the SmartThings cloud API `revoke` with another user and a device.  
+If a user knows a key, the user can call the SmartThings cloud API `provide` with the device and the key.  
+If any user knows a key, the user can call the device API `toggle` to the SmartThings cloud with the switch and the key.  
+Any user can call the device API `toggle` on the switch.

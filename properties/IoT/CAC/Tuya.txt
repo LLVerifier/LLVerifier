@@ -1,0 +1,8 @@
+Initially, the userA and userC know nothing; the cloudA records userA's information where its members are empty and its device is deviceB, and records deviceB's information where its key is 'secretOfB'; the deviceB is off, has a key 'secretOfB.
+
+The userA will always take operations in the order (press button, call device's API 'callAPI:setKey', and call cloud's 'callAPI:bind') until reset.
+If the userA is the owner of deviceB, userA will not take any operations in the next time point.
+If in the next point, userA reset the deviceB, the userA calls 'callAPI:bind' and is not the owner of deviceB.
+If reset happens, the userA will eventually press the button of deviceB.
+In the meantime, the userC can perform any operations between or after the userA.
+Eventually, there is a time point when userC is not local to deviceB and is not the owner of deviceB, and the next time userC is not local and the owner of deviceB

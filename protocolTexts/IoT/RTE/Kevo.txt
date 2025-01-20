@@ -1,0 +1,11 @@
+If any user is local to a device, they can press the device's button.
+When a user presses the button on any device and the device has a key, the device will use its key to encrypt a fresh random string as msg1 and send it to the user.
+When a device sends msg1 to a user, the user will record the message.
+If a user has msg1, whether they are local or remote, they can call the cloud API 'callAPI:bind' with a device and msg1 as arguments.
+When the cloud receives msg1 from a user and has a record of a device whose key matches the one used to encrypt msg1, the cloud will add the user as the device's owner.
+A user can call the cloud API 'callAPI:reset' with the target device as an argument at any time.
+When a user call the cloud API 'callAPI:reset' if the cloud records that the user is the device's owner, it will reset the device owner to empty.
+When a user is not local to any device and approaches one, they become local to that device.
+When a user is local to a device and then leaves, they become remote to that device.
+When a user is local to a device, they can leave it.
+When a user is not local to any device, they can approach deviceB.

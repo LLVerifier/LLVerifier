@@ -1,0 +1,76 @@
+load ../../Iot .
+mod SYSTEM is
+pr Iot .
+eq init = idle @  
+            < cloudA | userA : ('members' : nils , 'devices' : (deviceB))  >
+            ***< deviceB | 'pairCode' : false ,'onoff' : false , 'trust' : cloudA >
+            < deviceB | 'operationStatus' : ('onoff' : false) >
+            < deviceB | 'accessControl' : ('pairCode' : false , 'trust' : cloudA ) >
+            < userC | 'know' : nils >
+            < userA | 'know' : nils > .
+
+vars PrincipalX : Principal .
+var Act : Action .
+vars UserX UserY : User .
+vars CloudX CloudY : Cloud .
+vars KeyA KeyB Status : Qid .
+vars DeviceX DeviceY : Device .
+vars ...  ....  SetX SetY : Set .
+vars S : Soup .
+vars Any Any' B : Bool .
+vars N N' : Nat .
+
+eq < deviceB | 'accessControl' : ('pairCode' : false , ...) > $ cloudA 'callAPI:openWindow' deviceB | KeyA
+ = < deviceB | 'accessControl' : ('pairCode' : KeyA , ...) > .
+
+eq < deviceB | 'accessControl' : ('pairCode' : KeyA , 'trust' : SetX ) > $ PrincipalX 'callAPI:bind' deviceB | KeyA
+ = < deviceB | 'accessControl' : ('pairCode' : false , 'trust' : (PrincipalX , SetX))  > .
+
+eq < deviceB | 'accessControl' : ('trust' : (PrincipalX,SetX) , ... ) > 
+   < deviceB | 'operationStatus' : ('onoff' : B) > $ PrincipalX 'toggle' deviceB
+ = < deviceB | 'accessControl' : ('trust' : (PrincipalX,SetX) , ... ) > 
+   < deviceB | 'operationStatus' : ('onoff' : (not B)) > .
+
+eq < cloudA | UserX : ('members' : SetX , ...) > $ UserX 'invite' cloudA | UserY
+ = < cloudA | UserX : ('members' : (UserY,SetX) , ...) > .
+
+eq < cloudA | UserX : ('members' : (UserY,SetX) , ...) > $ UserX 'kick' cloudA | UserY
+ = < cloudA | UserX : ('members' : SetX , ...) > .
+
+eq < cloudA | UserY : ('members' : (UserX,SetX) , 'devices' : (DeviceX,SetY) ) > $ UserX 'callAPI:openWindow' cloudA | DeviceX
+ = < cloudA | UserY : ('members' : (UserX,SetX) , 'devices' : (DeviceX,SetY) ) > $ cloudA 'callAPI:openWindow' DeviceX | 'pairCodeA' $ cloudA 'respAPI:openWindow' UserX | 'pairCodeA' .
+
+
+endm
+mod TRANSITION is
+inc SYSTEM .
+
+vars K Status : Qid . 
+var Keys : Set .
+vars S S' : Soup .
+var E : Event .
+var Any : Bool .
+var N : Nat .
+vars ... .... SetX SetY : Set .
+
+ops ua1 ua2 uc1 uc3 : -> Event .
+ops uc2 : Qid -> Event .
+eq ua1 = $ userA 'invite' cloudA | userC .
+eq ua2 = $ userA 'kick' cloudA | userC  .
+
+eq uc1 = $ userC 'callAPI:openWindow' cloudA | deviceB .
+eq uc2(K) = $ userC 'callAPI:bind' deviceB | K .
+eq uc3 = $ userC 'toggle' deviceB .
+
+rl [um1] : E @ S => ep: ua1 @ S .
+
+rl [um2] : E @ S  => ep: ua2 @ S .
+
+rl [am1] : E @ S => ep: uc1 @ S .
+
+rl [am2] : 
+        E      @ S < userC | 'know' : (K , Keys) , ... > 
+ => ep: uc2(K) @ S < userC | 'know' : (K , Keys) , ... > .
+
+rl [am3] : E @ S => ep: uc3 @ S .
+endm

@@ -1,0 +1,7 @@
+suppose there are the symbols M, I, and U which can be combined to produce strings of symbols. The MU puzzle asks one to start with the "axiomatic" string MI and transform it into the string MU using in each step one of the following transformation rules:[1][2]
+
+    Nr.           	Formal rule[note 1] 	Informal explanation 	Example
+    1. 	xI 	→ 	xIU 	Add a U to the end of any string ending in I 	MI 	to 	MIU
+    2. 	Mx 	→ 	Mxx 	Double the string after the M 	MIU 	to 	MIUIU
+    3. 	xIIIy 	→ 	xUy 	Replace any III with a U 	MUIIIU 	to 	MUUU
+    4. 	xUUy 	→ 	xy 	Remove any UU 	MUUU 	to 	MU

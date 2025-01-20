@@ -1,0 +1,6 @@
+We can illustrate all this by means of a simple mutual exclusion example. Suppose that our
+original system module M is the following module MUTEX, in which two processes, one named a
+and another named b, can be either waiting or in their critical section, and take turns accessing
+their critical section by passing each other a different token (either $ or *).
+
+TEST

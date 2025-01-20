@@ -1,0 +1,12 @@
+When any user presses the button on any device and the device has a key, the device will send its key to the user.  
+When any device sends a key to any user, and the user has no key, the user will receive and know the key.  
+When any device has a keyA and any user calls the device API `callAPI:bind` with a keyB, the device will call the cloud API `callAPI:bind` with keyA and keyB.  
+If the cloud records that any device has a keyA and any user has a keyB, when anyone calls `callAPI:bind` with keyA and keyB, the cloud will add the user as the device's owner.  
+When any user is not local to any device and the user approaches the device, the user will become local to the device.  
+When any user is local to any device and the user leaves the device, the user will become remote to the device.
+
+If any user is local to any device, the user can press the device button.  
+If any user is local to any device and knows a key, the user can call the device API `callAPI:bind` with the key.  
+If any user has two keys, whether local or remote, the user can use these two keys to call the cloud API `callAPI:bind`.  
+When any user is local to any device, the user can leave the device.  
+When any user is not local to any device, the user can approach the device.

@@ -1,0 +1,45 @@
+eq < DeviceX | 'key' : nils, ... >
+   $ cloudA 'callAPI:openWindow' DeviceX | KeyD
+= < DeviceX | 'key' : KeyD, ... > .
+
+eq < DeviceX | 'key' : KeyA, ... >
+   $ cloudA 'callAPI:openWindow' DeviceX | KeyD
+= < DeviceX | 'key' : KeyD, ... > .
+
+eq < DeviceX | 'key' : KeyD, 'owners' : SetO, ... >
+   $ UserX 'callAPI:bind' DeviceX | KeyD
+= < DeviceX | 'key' : KeyD, 'owners' : (SetO, UserX), ... > .
+
+eq < DeviceX | 'owners' : (SetO, UserX), 'on' : false, ... >
+   $ UserX 'callAPI:toggle' DeviceX
+= < DeviceX | 'owners' : (SetO, UserX), 'on' : true, ... > .
+
+eq < cloudA | UserX : ('members' : SetM, ... ), ... >
+   $ UserX 'callAPI:invite' cloudA | UserY
+= < cloudA | UserX : ('members' : (SetM, UserY), ... ), ... > .
+
+eq < cloudA | UserX : ('members' : (SetM, UserY), ... ), ... >
+   $ UserX 'callAPI:kick' cloudA | UserY
+= < cloudA | UserX : ('members' : SetM, ... ), ... > .
+
+eq < cloudA | UserX : ('members' : (SetM, MemberY), 'device' : DeviceX, ... ), ... >
+   $ MemberY 'callAPI:openWindow' cloudA | DeviceX
+= < cloudA | UserX : ('members' : (SetM, MemberY), 'device' : DeviceX, ... ), ... >
+  $ cloudA 'callAPI:openWindow' DeviceX | FreshKeyZ
+  $ cloudA 'send' MemberY | FreshKeyZ .
+
+eq < UserX | 'knowledge' : SetK, ... >
+   $ cloudA 'send' UserX | KeyZ
+= < UserX | 'knowledge' : (SetK, KeyZ), ... > .
+
+eq ev1(UserX, DeviceX, KeyD) = $ UserX 'callAPI:bind' DeviceX | (KeyD) .
+eq ev2(UserX, DeviceX) = $ UserX 'callAPI:toggle' DeviceX .
+eq ev3(UserX, UserY) = $ UserX 'callAPI:invite' cloudA | (UserY) .
+eq ev4(UserX, UserY) = $ UserX 'callAPI:kick' cloudA | (UserY) .
+eq ev5(MemberY, DeviceX) = $ MemberY 'callAPI:openWindow' cloudA | (DeviceX) .
+
+rl < MemberY | 'knowledge' : KeyD , ... > => ev5(MemberY, cloudA) .
+rl < UserX | ... > < DeviceX | ... > => ev2(UserX, DeviceX) .
+rl => ev3(userA, userC) .
+rl => ev3(userC, userA) .
+rl < cloudA | UserX : 'members' : UserY , ... > => ev4(UserX, UserY) .

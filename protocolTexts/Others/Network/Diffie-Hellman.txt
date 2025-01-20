@@ -1,0 +1,17 @@
+--------https://personales.upv.es/sanesro/Maude-NPA_Protocols/diffie-hellman.html-----------
+Diffie–Hellman key exchange is a method of securely exchanging cryptographic keys over a public channel and was one of the first public-key protocols as conceived by Ralph Merkle and named after Whitfield Diffie and Martin Hellman. DH is one of the earliest practical examples of public key exchange implemented within the field of cryptography. Published in 1976 by Diffie and Hellman, this is the earliest publicly known work that proposed the idea of a private key and a corresponding public key. Traditionally, secure encrypted communication between two parties required that they first exchange keys by some secure physical means, such as paper key lists transported by a trusted courier. The Diffie–Hellman key exchange method allows two parties that have no prior knowledge of each other to jointly establish a shared secret key over an insecure channel. This key can then be used to encrypt subsequent communications using a symmetric-key cipher. Although Diffie–Hellman key agreement itself is a non-authenticated key-agreement protocol, it provides the basis for a variety of authenticated protocols, and is used to provide forward secrecy in Transport Layer Security's ephemeral modes (referred to as EDH or DHE depending on the cipher suite).
+
+The protocol specification in "Alice-Bob" notation is as follows.
+
+    (1) A -> B : A,B,exp(g,Na)
+    (2) B -> A : A,B,exp(g,Na)
+    (3) A -> B : enc(exp(exp(g,Nb),Na),secret(A,B))
+
+Where Na and Nb are nonces, exp(x,y) means x raised to y, enc(x,y) means message y encripted using key x, and secret(A,B) is a secret shared between A and B. Moreover, exponentiation and encription/decription have the following algebraic properties:
+
+    exp(exp(X,Y),Z) = exp(X, Y ⊕ Z)
+    e(K,d(K,M)) = M .
+    d(K,e(K,M)) = M .
+
+Where ⊕ is the xor operator, though no algebraic property is given, since they are not necessary for this protocol. However, note that the property for exponentiation is restricted below by using appopriate sorts in such a way that variable X can be only the generator g. This is necessary to have a finitary unification procedure based on narrowing.
+To download the complete protocol specification in Maude-NPA syntax and the outputs,

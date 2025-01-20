@@ -1,0 +1,68 @@
+load ../../Iot .
+mod SYSTEM is
+protecting Iot .
+eq init = idle @ < cloudA | deviceB : ('bdKey' : '' , 'owner' : false) >
+        	< deviceB | 'key' : false , 'pressed' : false  >
+        	< userC | 'localTo' : deviceD , 'know' : 'SecretC' >
+        	< userA | 'localTo' : deviceB , 'know' : 'SecretA' , 'counter' : 0 > .
+
+vars ...  ....  : Set .
+*** variables
+vars DeviceB : Device .
+vars KeyC KeyD KeyE : Qid .
+vars UserA UserD : User .
+
+eq < UserA | 'localTo' : DeviceB , ... > < DeviceB | 'pressed' : false , .... > $ UserA 'pressButton' DeviceB
+ = < UserA | 'localTo' : DeviceB , ... > < DeviceB | 'pressed' : true , .... > .
+eq < DeviceB | 'pressed' : true , 'key' : false , ... > < UserA | 'localTo' : DeviceB , .... > $ UserA 'callAPI:setKey' DeviceB | KeyC
+ = < DeviceB | 'pressed' : false , 'key' : KeyC , ... > < UserA | 'localTo' : DeviceB , .... > $ DeviceB 'callAPI:setKey' cloudA | KeyC .
+eq < DeviceB | 'pressed' : true , 'key' : KeyD , ... > < UserA | 'localTo' : DeviceB , .... > $ UserA 'callAPI:setKey' DeviceB | KeyC
+ = < DeviceB | 'pressed' : false , 'key' : KeyC , ... > < UserA | 'localTo' : DeviceB , .... > $ DeviceB 'callAPI:setKey' cloudA | KeyC .
+eq < DeviceB | 'pressed' : true , 'key' : KeyD , ... > < UserA | 'localTo' : DeviceB , .... > $ UserA 'callAPI:getKey' DeviceB
+ = < DeviceB | 'pressed' : true , 'key' : KeyD , ... > < UserA | 'localTo' : DeviceB , .... > $ DeviceB 'sendKey' UserA | KeyD .
+eq < cloudA | DeviceB : ('bdKey' : KeyE , ...) > $ DeviceB 'callAPI:setKey' cloudA | KeyC
+ = < cloudA | DeviceB : ('bdKey' : KeyC , ...) > .
+eq < cloudA | DeviceB : ('bdKey' : KeyC , 'owner' : false , ...) > $ UserA 'callAPI:bind' cloudA | (DeviceB ; KeyC)
+ = < cloudA | DeviceB : ('bdKey' : KeyC , 'owner' : UserA , ...) > .
+eq < cloudA | DeviceB : ('bdKey' : KeyC , 'owner' : UserD , ...) > $ UserA 'callAPI:reset' cloudA | (DeviceB ; KeyC)
+ = < cloudA | DeviceB : ('bdKey' : KeyC , 'owner' : false , ...) > .
+*** srew init using um1 ; um3 ; um4 ; ac ; am1 ; am3 ; al ; am5 .
+endm
+
+
+mod TRANSITION is
+including SYSTEM .
+*** given above policy, we can automatically infer all the events of userA and userC.
+vars K : Qid .
+var U : User .
+vars S S' : Soup .
+var E : Event .
+var N : Nat .
+vars SetX ... .... : Set .
+vars DeviceB : Device .
+vars KeyC KeyD KeyE : Qid .
+vars UserA UserD : User .
+
+*** generate using the events definition and the variable type definition.
+ops ev1 ev2 : User Device -> Event .
+ops ev3 ev4 ev5 : User Device Qid -> Event .
+
+*** use protocol above, ask for LLM
+eq ev1(UserA, DeviceB) = $ UserA 'pressButton' DeviceB . *** local
+eq ev2(UserA, DeviceB) = $ UserA 'callAPI:getKey' DeviceB . *** local
+eq ev3(UserA, DeviceB, KeyC) = $ UserA 'callAPI:setKey' DeviceB | KeyC . *** local
+eq ev4(UserA, DeviceB, KeyC) = $ UserA 'callAPI:bind' cloudA | (DeviceB ; KeyC) .
+eq ev5(UserA, DeviceB, KeyC) = $ UserA 'callAPI:reset' cloudA | (DeviceB ; KeyC) .
+
+rl E @ S < UserA | ... > < DeviceB | .... > => ep: ev1(UserA,DeviceB) @ S < UserA | ... > < DeviceB | .... > .
+rl E @ S < UserA | ... > < DeviceB | .... > => ep: ev2(UserA,DeviceB) @ S < UserA | ... > < DeviceB | .... > .
+rl E @ S < UserA | 'know' : (K , SetX) , ... > < DeviceB | .... > => ep: ev3(UserA,DeviceB,K) @ S < UserA | 'know' : (K , SetX) , ... > < DeviceB | .... > .
+rl E @ S < UserA | 'know' : (K , SetX) , ... > < DeviceB | .... > => ep: ev4(UserA,DeviceB,K) @ S < UserA | 'know' : (K , SetX) , ... > < DeviceB | .... > .
+rl E @ S < UserA | 'know' : (K , SetX) , ... > < DeviceB | .... > => ep: ev5(UserA,DeviceB,K) @ S < UserA | 'know' : (K , SetX) , ... > < DeviceB | .... > .
+
+rl [ac] : E @ S < userC | 'localTo' : deviceD , ... >
+   => $ userC 'approaches' deviceB @ S < userC | 'localTo' : deviceB , ... >  .
+rl [al] : E @ S < userC | 'localTo' : deviceB , ... >  
+   => $ userC 'leaves' deviceB @ S < userC | 'localTo' : deviceD , ... > .
+
+endm

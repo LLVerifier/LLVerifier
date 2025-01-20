@@ -1,0 +1,7 @@
+Initially, the userA is local to the deviceB, knows nothing, and his uid is 'userAid'; the userC is local to the deviceD, knows nothing, and his uid is 'userCid'; the cloud records deviceB's information where owner is nils, and no tickets.
+
+At each time point, only one operation can happen, either victim's or attacker's.
+The victim user will always take bind operations in the order until reset (not a must).
+If reset indeed happens, the victim will restart the binding process.
+In the meantime, the attacker can perform any operations between or after the victim.
+Only when the victim is alerted by the cloud can the victim take a reset operation at the next time point.

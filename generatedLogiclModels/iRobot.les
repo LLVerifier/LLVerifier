@@ -1,0 +1,45 @@
+eq < DeviceY | 'pressed' : false , ... > $ UserX 'pressButton' DeviceY
+= < DeviceY | 'pressed' : true , ... > .
+
+eq < DeviceY | 'pressed' : true , 'key' : nils , ... > $ UserX 'callAPI:setKey' DeviceY | KeyA
+= < DeviceY | 'pressed' : false , 'key' : KeyA , ... > $ DeviceY 'callAPI:setKey' cloudA | KeyA .
+
+eq < DeviceY | 'pressed' : true , 'key' : KeyB , ... > $ UserX 'callAPI:setKey' DeviceY | KeyA
+= < DeviceY | 'pressed' : false , 'key' : KeyA , ... > $ DeviceY 'callAPI:setKey' cloudA | KeyA .
+
+eq < cloudA | DeviceY : ('bdKey' : KeyB , 'owner' : OwnerX , ... ) , ... > $ DeviceY 'callAPI:setKey' cloudA | KeyA
+= < cloudA | DeviceY : ('bdKey' : KeyA , 'owner' : OwnerX , ... ) , ... > .
+
+eq < cloudA | DeviceY : ('bdKey' : KeyA , 'owner' : nils , ... ) , ... > $ UserX 'callAPI:bind' cloudA | DeviceY ; KeyA
+= < cloudA | DeviceY : ('bdKey' : KeyA , 'owner' : UserX , ... ) , ... > .
+
+eq < DeviceY | 'pressed' : true , 'key' : KeyA , ... > $ UserX 'callAPI:getKey' DeviceY
+= < DeviceY | 'pressed' : false , 'key' : KeyA , ... > $ DeviceY 'sendKey' UserX | KeyA .
+
+eq < UserX | 'key' : KeyB , ... > $ DeviceY 'sendKey' UserX | KeyA
+= < UserX | 'key' : KeyA , ... > .
+
+eq < cloudA | DeviceY : ('bdKey' : KeyA , 'owner' : OwnerX , ... ) , ... > $ UserX 'callAPI:reset' cloudA | DeviceY ; KeyA
+= < cloudA | DeviceY : ('bdKey' : nils , 'owner' : nils , ... ) , ... > .
+
+eq < UserX | 'localTo' : nils , ... > $ UserX 'approach' DeviceY
+= < UserX | 'localTo' : DeviceY , ... > .
+
+eq < UserX | 'localTo' : DeviceY , ... > $ UserX 'leave' DeviceY
+= < UserX | 'localTo' : nils , ... > .
+
+ev1(UserX,DeviceY) = $ UserX 'approach' DeviceY .
+ev2(UserX,DeviceY) = $ UserX 'leave' DeviceY .
+ev3(UserX,DeviceY) = $ UserX 'pressButton' DeviceY .
+ev4(UserX,DeviceY,KeyA) = $ UserX 'callAPI:setKey' DeviceY | (KeyA) .
+ev5(UserX,DeviceY) = $ UserX 'callAPI:getKey' DeviceY .
+ev6(UserX,DeviceY,KeyA) = $ UserX 'callAPI:bind' cloudA | ((DeviceY) ; KeyA) .
+ev7(UserX,DeviceY,KeyA) = $ UserX 'callAPI:reset' cloudA | ((DeviceY) ; KeyA) .
+
+rl < UserX | 'localTo' : DeviceY , ... > < DeviceY | ... > -> ev3(UserX, DeviceY) .
+rl < UserX | 'localTo' : DeviceY , ... > < DeviceY | ... > -> ev5(UserX, DeviceY) .
+rl < UserX | 'localTo' : DeviceY , 'key' : KeyA , ... > < DeviceY | ... > -> ev4(UserX, DeviceY, KeyA) .
+rl < UserX | 'localTo' : DeviceY , ... > < DeviceY | ... > -> ev2(UserX, DeviceY) .
+rl < UserX | 'localTo' : nils , ... > < DeviceY | ... > -> ev1(UserX, DeviceY) .
+rl < UserX | 'key' : KeyA , ... > < cloudA | DeviceY : ( ... ) ,... > -> ev6(UserX, DeviceY, KeyA) .
+rl < UserX | 'key' : KeyA , ... > < cloudA | DeviceY : ( ... ) ,... > -> ev7(UserX, DeviceY, KeyA) .

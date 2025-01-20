@@ -1,0 +1,6 @@
+Initially, the userA is local to the deviceB and has no key; The userC is not local and has no key; The cloud records that deviceB's key is 'secret' and the owner is empty; The deviceB has key 'secret'.
+
+The userA will first press the button, then call cloud's API 'callApi:Bind'.
+If the cloud records that userA is the owner of deviceB, userA will not take any operations in the next state.
+In the meantime, the userC can perform any operations between or after the userA.
+Eventually, there is a state that userC is not local to deviceB and is not the owner of deviceB, and the next time userC is not local and is the owner of deviceB.

@@ -1,0 +1,91 @@
+load ../../Iot .
+mod SYSTEM is
+protecting Iot .
+eq init = idle @ < cloudA | deviceB : ('trust' : userA ) > 
+            < cloudA | 'key' : 'cloudAPrivKey' >
+            < deviceB | 'key' : '' , 'counter' : 0 , 'trust' : userA > 
+            < userC | 'localTo' : deviceD , 'signedKey' : nils, 'key' : nils >
+            < userA | 'localTo' : deviceB , 'signedKey' : nils, 'key' : nils > .
+
+vars UserX UserY : User .
+vars KeyA KeyB Status R : Qid .
+var DeviceX : Device .
+vars ...  ....  SetX SetY : Set .
+vars S : Soup .
+vars Any Any' : Bool .
+vars N N' : Nat .
+
+***device rule
+eq  < DeviceX | 'key' : KeyA, 'counter' : N, ... > < UserX | 'localTo' : DeviceX , .... >
+    $ UserX 'callAPI:getKey' DeviceX 
+  = < DeviceX | 'key' : randomStr(N), 'counter' : (N + 1) rem 10 , ... > < UserX | 'localTo' : DeviceX , .... >
+    $ DeviceX 'respAPI:getKey' UserX | randomStr(N) . 
+
+eq < DeviceX | 'key' : KeyA, 'counter' : N , 'trust' : SetX > < UserX | 'localTo' : DeviceX , .... >
+    $ UserX 'callAPI:bind' DeviceX | encrypt('cloudAPrivKey' , KeyA)
+ = < DeviceX | 'key' : KeyA, 'counter' : N , 'trust' : (UserX,SetX) > < UserX | 'localTo' : DeviceX , .... > .
+   
+***cloud rule
+eq < cloudA | 'key' : KeyB > < cloudA | deviceB : ('trust' : (UserX,SetX) ) >
+   $ UserX 'callAPI:signKey' cloudA | (DeviceX ; KeyA) 
+ = < cloudA | 'key' : KeyB > < cloudA | deviceB : ('trust' : (UserX,SetX) ) >
+   $ cloudA 'respAPI:signKey' UserX | encrypt(KeyB , KeyA) .
+
+eq < cloudA | DeviceX : ('trust' : (UserX,SetX) ) >
+   $ UserX 'callAPI:share' cloudA | (UserY ; DeviceX)
+ = < cloudA | DeviceX : ('trust' : (UserY,UserX,SetX) ) > .
+
+eq < cloudA | DeviceX : ('trust' : (UserY,UserX,SetX) ) >
+   $ UserX 'callAPI:revoke' cloudA | (UserY ; DeviceX)
+ = < cloudA | DeviceX : ('trust' : (UserX,SetX) ) > .
+
+eq < UserX | 'key' : SetX, ... > $ DeviceX 'respAPI:getKey' UserX | KeyA
+ = < UserX | 'key' : (KeyA ,SetX), ... > .
+
+eq < UserX | 'signedKey' : SetX, ... > $ cloudA 'respAPI:signKey' UserX | KeyB
+ = < UserX | 'signedKey' : (KeyB ,SetX), ... > .
+endm
+
+mod TRANSITION is
+including SYSTEM .
+
+vars K Status : Qid . 
+var Keys : Set .
+vars S S' : Soup .
+var E : Event .
+var Any : Bool .
+var N : Nat .
+vars ... .... SetX SetY : Set .
+
+ops ua1 ua2 uc1  : -> Event .
+ops uc2 uc3 : Qid -> Event .
+eq ua1 = $ userA 'callAPI:share' cloudA | (userC ; deviceB) .
+eq ua2 = $ userA 'callAPI:revoke' cloudA | (userC ; deviceB)  .
+
+eq uc1    = $ userC 'callAPI:getKey' deviceB .
+eq uc2(K) = $ userC 'callAPI:signKey' cloudA | (deviceB ; K) .
+eq uc3(K) = $ userC 'callAPI:bind' deviceB | K  .
+
+rl [um1] : E @ S => ua1 @ S ua1 .
+
+rl [um2] : E @ S  => ua2 @ S ua2 .
+
+rl [am1] : 
+      E @ S < userC | 'localTo' : deviceB , ... > 
+ => uc1 @ S < userC | 'localTo' : deviceB , ... > uc1 .
+
+rl [am2] : 
+     E      @ S < userC | 'key' : (K , Keys) , ... > 
+  => uc2(K) @ S < userC | 'key' : (K , Keys) , ... > uc2(K) .
+
+rl [am3] : 
+     E      @ S < userC | 'localTo' : deviceB , 'signedKey' : (K , Keys) , ... > 
+  => uc3(K) @ S < userC | 'localTo' : deviceB , 'signedKey' : (K , Keys) , ... > uc3(K) .
+
+
+rl [ac] : E @ S < userC | 'localTo' : deviceD , ... > 
+   => $ userC 'approaches' deviceB @ S < userC | 'localTo' : deviceB , ... >  .
+rl [al] : E @ S < userC | 'localTo' : deviceB , ... >  
+   => $ userC 'leaves' deviceB @ S < userC | 'localTo' : deviceD , ... > .
+endm
+

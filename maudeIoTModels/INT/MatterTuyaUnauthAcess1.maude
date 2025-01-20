@@ -1,0 +1,69 @@
+load ../../Iot .
+mod SYSTEM is
+pr Iot .
+ops cloudTuya : -> Cloud .
+eq init = idle @  
+            < cloudTuya | userA : ('rootKey' : 'rootKeyA' , 'rootPubKey' : pub('rootKeyA') , 'members' : nils , 'devices' : (deviceB))  >
+            < cloudTuya | deviceB : ('nodeID':111,'fabricID':102) >
+            < deviceB | 'fabrics' : ('rootPubKey' : pub('rootKeyA') , 'fabricID' : 102 ) >
+            < deviceB | 'onoff' : false >
+            < userC | 'pubKey' : pub('secretOfC') , 'key' : 'secretOfC' , 'cert' : nils >
+            < userA | 'pubKey' : pub('secretOfA') , 'key' : 'secretOfA' , 'cert' : encrypt('rootKeyA' , pub('secretOfA')) > .
+
+vars PrincipalX : Principal .
+var Act : Action .
+vars UserX UserY : User .
+vars CloudX CloudY : Cloud .
+vars KeyA KeyB Status : Qid .
+vars DeviceX DeviceY : Device .
+vars ...  ....  SetX SetY : Set .
+vars S : Soup .
+vars Any Any' B : Bool .
+vars N N' : Nat .
+
+eq < deviceB | 'fabrics' : ('rootPubKey' : pub(KeyB), ...)  > < deviceB | 'onoff' : B > $ UserX 'toggle' deviceB | (encrypt(KeyB , pub(KeyA)) ; KeyA)
+ = < deviceB | 'fabrics' : ('rootPubKey' : pub(KeyB), ...)  > < deviceB | 'onoff' : (not B) > .
+
+eq < cloudTuya | UserX : ('members' : SetX , ...) > $ UserX 'invite' cloudTuya | UserY
+ = < cloudTuya | UserX : ('members' : (UserY,SetX) , ...) > .
+
+eq < cloudTuya | UserX : ('members' : (UserY,SetX) , ...) > $ UserX 'kick' cloudTuya | UserY
+ = < cloudTuya | UserX : ('members' : SetX , ...) > .
+
+eq < cloudTuya | UserY : ('members' : (UserX,SetX) , 'rootKey' : KeyB , ... ) > $ UserX 'callAPI:signKey' cloudTuya | pub(KeyA)
+ = < cloudTuya | UserY : ('members' : (UserX,SetX) , 'rootKey' : KeyB , ... ) > $ cloudTuya 'respAPI:signKey' UserX | encrypt(KeyB, pub(KeyA)) .
+
+eq < UserX | 'cert' : SetX , 'key' : KeyA , ... > $ cloudTuya 'respAPI:signKey' UserX | encrypt(KeyB, pub(KeyA))
+ = < UserX | 'cert' : (encrypt(KeyB, pub(KeyA)) , SetX) , 'key' : KeyA , ... > .
+
+endm
+mod TRANSITION is
+inc SYSTEM .
+
+vars K Status : Qid . 
+var Keys : Set .
+vars S S' : Soup .
+var E : Event .
+var Any : Bool .
+var N : Nat .
+vars ... .... SetX SetY : Set .
+
+ops ua1 ua2 uc1 : -> Event .
+ops uc2 : Qid -> Event .
+eq ua1 = $ userA 'invite' cloudTuya | userC .
+eq ua2 = $ userA 'kick' cloudTuya | userC  .
+
+eq uc1 = $ userC 'callAPI:signKey' cloudTuya | pub('secretOfC')  .
+eq uc2(K) = $ userC 'toggle' deviceB | (K ; 'secretOfC') .
+
+rl [um1] : E @ S => ua1 @ S ua1 .
+
+rl [um2] : E @ S  => ua2 @ S ua2 .
+
+rl [am1] : E @ S => uc1 @ S uc1 .
+
+rl [am2] : 
+     E      @ S < userC | 'cert' : (K , Keys) , ... > 
+  => uc2(K) @ S < userC | 'cert' : (K , Keys) , ... > uc2(K) .
+endm
+

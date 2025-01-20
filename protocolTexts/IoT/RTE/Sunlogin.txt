@@ -1,0 +1,10 @@
+When a user is not near a device and then approaches it, they become local to that device.
+When a user is local to a device and then walks away, they become remote from it.
+If a user presses the button on a device and the device has a key, it will send that key to the user.
+If a device sends a key to a user who doesn’t already have one, the user will receive and know the key.
+If the cloud records that a device has a key and the user calls callAPI:bind with that device and key, the cloud will add the user as an owner of the device.
+
+If a user is near a device, they can press its button.
+If a user has a key—whether they're near the device or not—they can use it to call the cloud's callAPI:bind API.
+When a user is near a device, they can also leave it.
+If a user is not currently near any device, they can approach deviceB.
