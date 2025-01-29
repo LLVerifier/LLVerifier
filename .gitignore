@@ -1,2 +1,3 @@
 test/*
 .gitconfig
+push.sh
