@@ -1,0 +1,23 @@
+When any device has any key, and the owner user calls device API 'callAPI:toggle' with the same key as an argument, then the device will be on.
+When cloudA records any user information, and the user calls cloudA API 'callAPI:invite' with any invited user as an argument, the cloud will add the invited user to members.
+When cloudA records any user has any member user, and the user call cloudA API 'callAPI:kick' with the member user as an argument, the cloud will remove the member user from members.
+When cloudA records any user has any device that has any key, and the user calls cloudA API 'callAPI:getKey' with the device, then cloudA will trigger events that send the device's key to the user.
+When cloudA records any user has any device which is off, and the user calls cloudA API 'callAPI:toggle', the device will be on.
+When cloudA records any user has any device which is off and the user has any member user, and the member user calls cloudA API 'callAPI:toggle', the device will be on.
+When the cloudA sends any user any keys, the user will add the key to his knowledge.
+
+when any user knows any key, he can call device API 'callAPI:toggle' with the key to any device.
+In any condition, any user can call cloud API 'callAPI:toggle' to cloudA.
+In any condition, any user can call cloud API 'callAPI:getKey' to cloudA.
+The userA can call cloudA API 'callAPI:invite' with userC.
+The userC can call cloudA API 'callAPI:invite' with userA.
+If any user has some members, any user can call cloudA API 'callAPI:kick' with the member user.
+
+Initially, the userA and userC know nothing; the cloudA records userA's information where its members are empty and its device is deviceB, and records deviceB's information where its key is 'secretOfB'; the deviceB is off, has a key 'secretOfB.
+
+The userA will always take operations in the order (press button, call device's API 'callAPI:setKey', and call cloud's 'callAPI:bind') until reset. 
+If the userA is the owner of deviceB, userA will not take any operations in the next time point.
+If in the next point, userA reset the deviceB, the userA calls 'callAPI:bind' and is not the owner of deviceB.
+If reset happens, the userA will eventually press the button of deviceB.
+In the meantime, the userC can perform any operations between or after the userA.
+Eventually, there is a time point when userC is not local to deviceB and is not the owner of deviceB, and the next time userC is not local and the owner of deviceB.

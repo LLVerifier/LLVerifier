@@ -1,0 +1,60 @@
+eq < DeviceX | ... > $ UserA 'press' DeviceX
+= < DeviceX | ... > $ DeviceX 'callAPI:setKey' cloudA | FreshKeyA .
+
+eq < cloudA | DeviceX : ('ticket' : Tickets , 'owner' : OwnerX , ...) , ... > $ DeviceX 'callAPI:setKey' cloudA | KeyA
+= < cloudA | DeviceX : ('ticket' : (('key' : KeyA , 'time' : CurrentTime), Tickets) , 'owner' : OwnerX , ...) , ... > .
+
+ceq < cloudA | DeviceX : ('ticket' : ('key' : KeyA , 'time' : TimeA) , ...) , ... > $ UserA 'callAPI:getKey' cloudA | DeviceX
+= < cloudA | DeviceX : ('ticket' : ('key' : KeyA , 'time' : TimeA) , ...) , ... > $ cloudA 'sendKey' UserA | KeyA
+if CurrentTime < TimeA + 1 .
+
+ceq < cloudA | DeviceX : ('ticket' : ('key' : KeyA , 'time' : TimeA) , 'owner' : nils , ...) , ... > $ UserA 'callAPI:bind' cloudA | (DeviceX ; KeyA)
+= < cloudA | DeviceX : ('ticket' : ('key' : KeyA , 'time' : TimeA) , 'owner' : UserA , ...) , ... >
+if CurrentTime < TimeA + 1 .
+
+ceq < cloudA | DeviceX : ('ticket' : ('key' : KeyA , 'time' : TimeA) , 'owner' : OwnerX , ...) , UserB : ('uid' : UidB , ...) , ... > $ UserA 'callAPI:bind' cloudA | (DeviceX ; KeyA)
+= < cloudA | DeviceX : ('ticket' : ('key' : KeyA , 'time' : TimeA) , 'owner' : UserA , ...) , UserB : ('uid' : UidB , ...) , ... > $ cloudA 'sendUID' UserA | UidB
+if CurrentTime < TimeA + 1 .
+
+ceq < cloudA | DeviceX : ('ticket' : ('key' : KeyA , 'time' : TimeA) , 'owner' : UserB , ...) , UserB : ('uid' : UidB , ...) , ... > $ UserA 'callAPI:join' cloudA | (UidB ; KeyA)
+= < cloudA | DeviceX : ('ticket' : ('key' : KeyA , 'time' : TimeA) , 'owner' : (UserB , UserA) , ...) , UserB : ('uid' : UidB , ...) , ... >
+if CurrentTime < TimeA + 1 .
+
+ceq < cloudA | DeviceX : ('ticket' : (('key' : KeyA , 'time' : TimeA), Tickets) , ...) , ... >
+= < cloudA | DeviceX : ('ticket' : Tickets , ...) , ... >
+if CurrentTime > TimeA + 2 .
+
+eq < UserA | 'knowsKey' : SetX , ... > $ DeviceX 'sendKey' UserA | KeyA
+= < UserA | 'knowsKey' : (SetX, KeyA) , ... > .
+
+eq < UserA | 'knowsUID' : SetX , ... > $ DeviceX 'sendUID' UserA | UidB
+= < UserA | 'knowsUID' : (SetX, UidB) , ... > .
+
+eq < UserA | 'localTo' : SetX , ... > $ UserA 'approach' DeviceX
+= < UserA | 'localTo' : (SetX , DeviceX) , ... > .
+
+eq < UserA | 'localTo' : (SetX , DeviceX) , ... > $ UserA 'leave' DeviceX
+= < UserA | 'localTo' : SetX , ... > .
+
+vars DeviceX : Device .
+vars UserA UserB : User .
+vars OwnerX : Principal .
+vars KeyA KeyB FreshKeyA : Qid .
+vars UidB : Qid .
+vars TimeA CurrentTime : Integer .
+vars SetX : Set .
+vars Tickets : Item .
+
+eq ev1(UserA, DeviceX) = $ UserA 'press' DeviceX .
+eq ev2(UserA, DeviceX) = $ UserA 'callAPI:getKey' cloudA | (DeviceX) .
+eq ev3(UserA, DeviceX, KeyA) = $ UserA 'callAPI:bind' cloudA | ((DeviceX) ; KeyA) .
+eq ev4(UserA, UidB, KeyA) = $ UserA 'callAPI:join' cloudA | ((UidB) ; KeyA) .
+eq ev5(UserA, DeviceX) = $ UserA 'approach' DeviceX .
+eq ev6(UserA, DeviceX) = $ UserA 'leave' DeviceX .
+
+rl < UserA | 'localTo' : DeviceX , ... > < DeviceX | ... > => ev1(UserA, DeviceX) .
+rl < UserA | 'localTo' : DeviceX , ... > < DeviceX | ... > => ev2(UserA, DeviceX) .
+rl < UserA | 'localTo' : DeviceX , ... > < DeviceX | ... > => ev6(UserA, DeviceX) .
+rl < UserA | 'knowsKey' : KeyA , ... > => ev3(UserA, DeviceX, KeyA) .
+rl < UserA | 'knowsKey' : KeyA , 'knowsUID' : UidB , ... > => ev4(UserA, UidB, KeyA) .
+rl < UserA | 'localTo' : nils , ... > < DeviceX | ... > => ev5(UserA, DeviceX) .

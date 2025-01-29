@@ -1,0 +1,50 @@
+eq < DeviceX | 'key' : KeyX , 'isOn' : false , ... >
+   $ UserX 'callAPI:toggle' DeviceX | KeyX
+= < DeviceX | 'key' : KeyX , 'isOn' : true , ... > .
+
+eq < cloudA | UserX : ('members' : SetM , ... ) , ... >
+   $ UserX 'callAPI:invite' cloudA | UserY
+= < cloudA | UserX : ('members' : (SetM , UserY) , ... ) , ... > .
+
+eq < cloudA | UserX : ('members' : (SetM , UserY) , ... ) , ... >
+   $ UserX 'callAPI:kick' cloudA | UserY
+= < cloudA | UserX : ('members' : SetM , ... ) , ... > .
+
+eq < cloudA | UserX : ('device' : DeviceX , ... ) , DeviceX : ('key' : KeyX , ... ) , ... >
+   $ UserX 'callAPI:getKey' cloudA | DeviceX
+= < cloudA | UserX : ('device' : DeviceX , ... ) , DeviceX : ('key' : KeyX , ... ) , ... >
+   $ cloudA 'send' UserX | KeyX .
+
+eq < cloudA | UserX : ('device' : DeviceX , ... ), ... >
+   < DeviceX | 'isOn' : false , ... >
+   $ UserX 'callAPI:toggle' cloudA | DeviceX
+= < cloudA | UserX : ('device' : DeviceX , ... ), ... >
+   < DeviceX | 'isOn' : true , ... > .
+
+eq < cloudA | UserX : ('device' : DeviceX , 'members' : (SetM , UserY) , ... ) , ... >
+   < DeviceX | 'isOn' : false , ... >
+   $ UserY 'callAPI:toggle' cloudA | DeviceX
+= < cloudA | UserX : ('device' : DeviceX , 'members' : (SetM , UserY) , ... ) , ... >
+   < DeviceX | 'isOn' : true , ... > .
+
+eq < UserX | 'knows' : SetK , ... >
+   $ cloudA 'send' UserX | KeyX
+=  < UserX | 'knows' : (SetK , KeyX) , ... > .
+
+vars DeviceX : Device .
+vars KeyX : Qid .
+vars UserX UserY : User .
+vars SetM SetK : Set .
+
+eq ev1(UserX, DeviceX, KeyX) = $ UserX 'callAPI:toggle' DeviceX | (KeyX) .
+eq ev2(UserX, UserY) = $ UserX 'callAPI:invite' cloudA | (UserY) .
+eq ev3(UserX, UserY) = $ UserX 'callAPI:kick' cloudA | (UserY) .
+eq ev4(UserX, DeviceX) = $ UserX 'callAPI:getKey' cloudA | (DeviceX) .
+eq ev5(UserX, DeviceX) = $ UserX 'callAPI:toggle' cloudA | (DeviceX) .
+
+rl < UserX | 'knows' : KeyX , ... > < DeviceX | ... > => ev1(UserX, DeviceX, KeyX) .
+rl => ev5(UserX, DeviceX) .
+rl => ev4(UserX, DeviceX) .
+rl => ev2(userA, userC) .
+rl => ev2(userC, userA) .
+rl < cloudA | UserX : 'members' : (UserY , ... ) , ... > => ev3(UserX, UserY) .

@@ -1,0 +1,22 @@
+[Initial States]
+Initially, there are 3 principals:
+- A client 'clientA' with attributes: `state = "idle"`, `sessionKeys = {}`.
+- A server 'serverB' with attributes: `state = "idle"`, `sessionKeys = {}`.
+- A certificate authority (CA) 'CA' with an attribute: `trustedCertificates = {list of trusted certs}`.
+
+[State Changes]
+- When any client initiates a handshake event with any server, the client’s state changes to `handshaking` and the server’s state changes to `awaitingClientHello`.
+- When any server receives a `ClientHello` from any client, the server generates a `ServerHello`, negotiates parameters, and its state changes to `awaitingClientResponse`.
+- When any client receives a `ServerHello` and the server’s certificate, the client verifies the certificate using the CA's `trustedCertificates`. If verified, the client generates key material, changes its state to `awaitingFinished`, and sends a `ClientKeyExchange`.
+- When any server receives a `ClientKeyExchange` and the client’s handshake finished message, the server computes shared keys, changes its state to `connected`, and sends its handshake finished message.
+- When any client receives the server’s handshake finished message, the client changes its state to `connected` and updates its `sessionKeys`.
+
+[Event Conditions]
+- A handshake event can occur between any client and any server if the client and server are both in `idle` state.
+- A client can send a `ClientHello` if its state is `handshaking` and the server is in `awaitingClientHello`.
+- A server can send a `ServerHello` and its certificate if it is in `awaitingClientHello` and the client is in `handshaking`.
+- A client can send a `ClientKeyExchange` if it verifies the server’s certificate and is in `awaitingClientResponse`.
+- A server can send its handshake finished message if it has received a `ClientKeyExchange` and computed the shared keys.
+
+
+Threat Model TODO
